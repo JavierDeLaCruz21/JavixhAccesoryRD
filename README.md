@@ -61,6 +61,7 @@ E-commerce completo para venta de accesorios tecnológicos (Apple, Samsung, Anke
 ## 🏗️ Arquitectura
 
 javich-shop/
+
 ├── api/ # Endpoints REST (JSON)
 │ ├── admin/ # Dashboard, productos, pedidos, usuarios
 │ ├── auth/ # Login, registro, recuperación, OAuth
