@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método de Pago - Javich AccesoryShop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="pago.css">
+</head>
+
+<body>
+    <!-- Skip link (accesibilidad) -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+    <div class="pago-layout">
+        <!-- HEADER -->
+        <header class="pago-header">
+            <div class="header-left">
+                <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Volver</a>
+            </div>
+            <div class="header-center">
+                <div class="brand-logo"><i class="fas fa-bolt"></i></div>
+                <div class="brand-text">
+                    <span class="brand-title">JAVIXH</span>
+                    <span class="brand-subtitle">Pago Seguro</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main id="main-content" tabindex="-1">
+            <!-- CRONÓMETRO -->
+            <div class="timer-card" id="timer-card">
+                <div class="timer-icon"><i class="fas fa-clock"></i></div>
+                <div class="timer-info">
+                    <div class="timer-label">Tiempo restante para completar el pago</div>
+                    <div class="timer-value" id="timer-value">72:00:00</div>
+                    <div class="timer-warning" id="timer-warning" style="display: none;">
+                        ⚠️ Tu pedido se cancelará automáticamente si no completas el pago
+                    </div>
+                </div>
+            </div>
+
+            <div class="pago-grid">
+                <!-- RESUMEN DEL PEDIDO -->
+                <section class="pago-card resumen-card">
+                    <h2><i class="fas fa-receipt"></i> Resumen del Pedido</h2>
+                    <div id="pedido-info" class="pedido-info">
+                        <div class="loading-state">Cargando pedido...</div>
+                    </div>
+                </section>
+
+                <!-- SELECCIÓN DE BANCO -->
+                <section class="pago-card bancos-card">
+                    <h2><i class="fas fa-university"></i> Selecciona tu banco</h2>
+                    <div id="bancos-container" class="bancos-container">
+                        <div class="loading-state">Cargando bancos...</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TARJETA DEL BANCO SELECCIONADO -->
+            <section class="pago-card banco-detalle" id="banco-detalle" style="display: none;">
+                <div class="detalle-header">
+                    <h2><i class="fas fa-credit-card"></i> Datos para la transferencia</h2>
+                    <button class="btn-cerrar-detalle" id="btn-cerrar-detalle"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="detalle-content">
+                    <div class="banco-logo-container">
+                        <img id="banco-logo" src="" alt="Logo del banco" class="banco-logo">
+                    </div>
+                    <div class="banco-datos">
+                        <div class="dato-row">
+                            <div class="dato-label">Banco</div>
+                            <div class="dato-value" id="banco-nombre">-</div>
+                        </div>
+                        <div class="dato-row">
+                            <div class="dato-label">Tipo de cuenta</div>
+                            <div class="dato-value" id="banco-tipo">-</div>
+                        </div>
+                        <div class="dato-row">
+                            <div class="dato-label">Número de cuenta</div>
+                            <div class="dato-value cuenta-row">
+                                <span id="banco-cuenta">-</span>
+                                <button class="btn-copiar" id="btn-copiar" title="Copiar número">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="dato-row">
+                            <div class="dato-label">Titular</div>
+                            <div class="dato-value" id="banco-titular">-</div>
+                        </div>
+                    </div>
+                    <button class="btn-whatsapp" id="btn-enviar-whatsapp">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>Enviar Voucher por WhatsApp</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts (ui-helpers PRIMERO) -->
+    <script src="ui-helpers.js"></script>
+    <script src="pago.js"></script>
+</body>
+</html>

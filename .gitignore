@@ -1,0 +1,34 @@
+# Variables de entorno (NUNCA subir)
+config/.env
+.env
+
+# Logs
+logs/
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+*.swp
+
+# Uploads (no subir imágenes de usuarios)
+img/productos/
+uploads/
+!img/productos/.gitkeep
+!uploads/products/.gitkeep
+
+# Dependencias
+/vendor/
+/node_modules/
+
+# Temporales
+*.tmp
+*.bak
+debug.php
+diag.php

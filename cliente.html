@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Javich AccesoryShop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="cliente.css">
+    <!-- Librerías para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = saved ? saved === 'dark' : prefersDark;
+            document.documentElement.classList.add(isDark ? 'dark-mode' : 'light-mode');
+        })();
+    </script>
+
+    <!-- Skip link (accesibilidad) -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- OVERLAY PARA MÓVIL -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="cliente-layout">
+        <!-- SIDEBAR MEJORADO -->
+        <aside class="cliente-sidebar" id="cliente-sidebar">
+            <!-- HEADER CON LOGO -->
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <div class="brand-logo">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="brand-text">
+                        <span class="brand-title">JAVIXH</span>
+                        <span class="brand-subtitle">AccesoryRD</span>
+                    </div>
+                </div>
+                <button class="sidebar-close" id="sidebar-close" aria-label="Cerrar menú">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- NAVEGACIÓN -->
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">Menú Principal</span>
+                    <a href="#" class="nav-item active" data-section="dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="orders">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>Mis Pedidos</span>
+                        <span class="nav-badge" id="nav-badge-orders" style="display: none;">0</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Configuración</span>
+                    <a href="#" class="nav-item" data-section="profile">
+                        <i class="fas fa-user"></i>
+                        <span>Editar Perfil</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="password">
+                        <i class="fas fa-lock"></i>
+                        <span>Cambiar Contraseña</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Acciones</span>
+                    <a href="index.html" class="nav-item store-link">
+                        <i class="fas fa-store"></i>
+                        <span>Volver a la tienda</span>
+                    </a>
+                    <a href="#" class="nav-item logout-link" id="cliente-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Cerrar sesión</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- FOOTER CON INFO DE USUARIO -->
+            <div class="sidebar-footer">
+                <div class="user-mini-profile">
+                    <div class="user-avatar" id="sidebar-avatar">U</div>
+                    <div class="user-info">
+                        <span class="user-name" id="sidebar-user-name">Usuario</span>
+                        <span class="user-email" id="sidebar-user-email">usuario@email.com</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="cliente-main" id="main-content" tabindex="-1">
+            <!-- TOPBAR -->
+            <header class="cliente-topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Abrir menú">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="section-title">Dashboard</h1>
+                </div>
+                <div class="topbar-right">
+                    <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <span class="cliente-user-name" id="cliente-user-name">Usuario</span>
+                    <div class="cliente-avatar" id="cliente-avatar">U</div>
+                </div>
+            </header>
+
+            <!-- BANNER DE RETORNO -->
+            <div id="return-store-banner" class="return-store-banner" style="display: none;">
+                <div class="banner-content">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div class="banner-text">
+                        <h3>Tienes productos en tu carrito</h3>
+                        <p>Continúa tu compra o explora más productos</p>
+                    </div>
+                    <a href="index.html" class="btn-return-store">
+                        <i class="fas fa-arrow-left"></i> Volver a la tienda
+                    </a>
+                </div>
+            </div>
+
+            <!-- SECCIÓN DASHBOARD -->
+            <section class="cliente-section active" id="section-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-shopping-bag"></i></div>
+                        <div class="stat-info">
+                            <h3 id="stat-orders">0</h3>
+                            <p>Pedidos realizados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <h3 id="stat-completed">0</h3>
+                            <p>Pedidos completados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <h3 id="stat-pending">0</h3>
+                            <p>Pedidos pendientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="stat-info">
+                            <h3 id="stat-total">$0</h3>
+                            <p>Total gastado</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-info-circle"></i> Información de la cuenta</h3>
+                        <div class="account-info">
+                            <div class="info-item">
+                                <strong>Nombre:</strong>
+                                <span id="info-name">Cargando...</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Email:</strong>
+                                <span id="info-email">Cargando...</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Miembro desde:</strong>
+                                <span id="info-date">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN PERFIL -->
+            <section class="cliente-section" id="section-profile">
+                <div class="section-header">
+                    <h2>Editar Perfil</h2>
+                </div>
+                <div class="form-container">
+                    <form id="profile-form" class="cliente-form">
+                        <div class="form-group">
+                            <label for="profile-name">Nombre completo *</label>
+                            <input type="text" id="profile-name" name="nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-email">Correo electrónico *</label>
+                            <input type="email" id="profile-email" name="email" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECCIÓN CAMBIAR CONTRASEÑA -->
+            <section class="cliente-section" id="section-password">
+                <div class="section-header">
+                    <h2>Cambiar Contraseña</h2>
+                </div>
+                <div class="form-container">
+                    <form id="password-form" class="cliente-form">
+                        <div class="form-group">
+                            <label for="current-password">Contraseña actual *</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="current-password" name="password_actual" required>
+                                <button type="button" class="toggle-password" data-target="current-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">Nueva contraseña *</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="new-password" name="password_nueva" required minlength="8">
+                                <button type="button" class="toggle-password" data-target="new-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small class="form-hint">mínimo 8 caracteres</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirmar nueva contraseña *</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="confirm-password" name="password_confirm" required>
+                                <button type="button" class="toggle-password" data-target="confirm-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <p id="match-message" class="match-message"></p>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-key"></i> Cambiar contraseña
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECCIÓN PEDIDOS -->
+            <section class="cliente-section" id="section-orders">
+                <div class="section-header">
+                    <h2>Mis Pedidos</h2>
+                </div>
+                <div id="orders-container" class="orders-container">
+                    <div id="orders-list" class="orders-list">
+                        <div class="loading-cell">Cargando pedidos...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- LOADING OVERLAY (para operaciones internas, no la carga inicial) -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="loading-text">Preparando tu cuenta...</div>
+        </div>
+    </div>
+
+    <!-- TOAST legacy (el sistema unificado usa #toast-container) -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Loading Screen (DENTRO del body) -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <img src="./img/android-chrome-192x192.png" alt="Javich AccesoryShop" class="loading-logo">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Preparando tu cuenta...</p>
+        </div>
+    </div>
+
+    <!-- Scripts (ui-helpers PRIMERO) -->
+    <script src="ui-helpers.js"></script>
+    <script src="cliente.js"></script>
+</body>
+</html>

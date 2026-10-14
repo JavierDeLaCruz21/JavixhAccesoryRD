@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#050b14">
+    <title>Javich AccesoryShop | Catálogo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+    (function() {
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = saved ? saved === 'dark' : prefersDark;
+        document.documentElement.classList.add(isDark ? 'dark-mode' : 'light-mode');
+    })();
+    </script>
+</head>
+
+<body>
+    <!-- ✅ Cron de expiración -->
+    <script>
+        fetch('api/cron/expirar.php').catch(() => {});
+    </script>
+
+    <!-- Skip link (accesibilidad) -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <img src="./img/android-chrome-192x192.png" alt="Javich AccesoryShop" class="loading-logo">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Cargando tienda...</p>
+        </div>
+    </div>
+
+    <header>
+        <nav class="navbar">
+            <button class="hamburger" id="hamburger" aria-label="Abrir menú">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="logo-container">
+                <a href="#" class="logo-link" id="logo-link">
+                    <img src="./img/android-chrome-192x192.png" alt="Javich Logo" class="main-logo-img">
+                    <span class="tm-icon">JAVIXH</span>
+                    <span class="accent-text">AccesoryRD</span>
+                </a>
+            </div>
+
+            <div class="nav-actions-top">
+                <button class="theme-btn" id="theme-toggle" aria-label="Cambiar tema">
+                    <i class="fas fa-moon"></i>
+                </button>
+
+                <div class="profile-wrapper">
+                    <div class="profile-chip hidden" id="profile-chip" aria-haspopup="true" aria-expanded="false" tabindex="0">
+                        <i class="fas fa-user-circle profile-icon"></i>
+                        <span class="profile-name" id="profile-name">Usuario</span>
+                        <i class="fas fa-chevron-down profile-arrow"></i>
+                    </div>
+
+                    <div class="profile-menu hidden" id="profile-menu">
+                        <a href="cliente.html" class="profile-menu-item panel-link" id="client-panel-link" style="display: none;">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Mi Cuenta</span>
+                        </a>
+                        <a href="admin.html" class="profile-menu-item panel-link" id="admin-panel-link" style="display: none;">
+                            <i class="fas fa-user-shield"></i>
+                            <span>Panel Admin</span>
+                        </a>
+                        <button class="profile-menu-item logout-btn" id="logout-btn">
+                            <i class="fas fa-right-from-bracket"></i>
+                            <span>Cerrar sesión</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cart-icon" id="cart-icon" aria-label="Carrito">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">0</span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div id="nav-actions" class="nav-actions">
+        <div class="auth-links">
+            <a href="#" class="auth-item" id="login-btn">Login</a>
+            <a href="#" class="auth-item" id="register-btn">Register</a>
+        </div>
+    </div>
+
+    <main id="main-content" tabindex="-1">
+        <section class="hero">
+            <div class="carousel-container">
+                <div class="carousel-slide" id="carousel-slide"></div>
+                <button class="carousel-btn prev" id="prevBtn" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" id="nextBtn" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
+                <div class="carousel-dots" id="carousel-dots"></div>
+            </div>
+        </section>
+
+        <section class="filter-section">
+            <div class="hero">
+                <h2>Accesorios Originales</h2>
+                <p>La mejor calidad para tu Samsung, Apple, Tablets y más.</p>
+            </div>
+            <div class="catalog-controls">
+                <input type="search" id="product-search" placeholder="Buscar por nombre o descripción..." aria-label="Buscar productos">
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="TODOS">Todos</button>
+                <button class="filter-btn" data-filter="APPLE">Apple</button>
+                <button class="filter-btn" data-filter="SAMSUNG">Samsung</button>
+                <button class="filter-btn" data-filter="ACCESORIOS">Accesorios</button>
+            </div>
+        </section>
+
+        <section class="product-grid" id="product-grid"></section>
+    </main>
+
+    <div class="cart-drawer" id="cart-drawer" aria-hidden="true">
+        <div class="cart-header">
+            <h2>Tu Carrito</h2>
+            <button class="close-btn" id="close-cart" aria-label="Cerrar carrito"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-items" id="cart-items"></div>
+        <div class="cart-footer">
+            <div class="total-container">
+                <span>Total:</span>
+                <span id="cart-total">$0.00</span>
+            </div>
+            <button class="checkout-btn" id="checkout-btn">Finalizar Compra</button>
+        </div>
+    </div>
+
+    <!-- Modal de Login -->
+    <div class="auth-modal" id="login-modal" aria-hidden="true">
+        <div class="auth-card">
+            <button class="close-auth" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+            <h2>Iniciar Sesión</h2>
+            
+            <button class="google-auth-btn">
+            <i class="fab fa-google" style="font-size: 1.3rem; color: #4285F4;"></i>
+            Continuar con Google
+            </button>
+            
+            <div class="auth-divider"><span>O ingresa tus datos</span></div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="login-email">Correo Electrónico</label>
+                    <input type="email" id="login-email" required placeholder="correo@ejemplo.com">
+                </div>
+                
+                <div class="input-group password-group">
+                    <label for="login-pass">Contraseña</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="login-pass" required placeholder="********">
+                        <button type="button" class="toggle-password" data-target="login-pass" aria-label="Mostrar contraseña">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="auth-submit-btn">Ingresar</button>
+                
+                <p style="text-align: center; margin-top: 1rem; margin-bottom: 0; font-size: 0.9rem;">
+                    <a href="forgot-password.html" style="color: var(--primary, #2563eb); text-decoration: none; font-weight: 500;">¿Olvidaste tu contraseña?</a>
+                </p>
+            </form>
+            <p class="auth-switch">¿No tienes cuenta? <a href="#" id="switch-to-register">Regístrate aquí</a></p>
+        </div>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div class="auth-modal" id="register-modal" aria-hidden="true">
+        <div class="auth-card">
+            <button class="close-auth" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+            <h2>Crear Cuenta</h2>
+            
+            <button class="google-auth-btn">
+            <i class="fab fa-google"></i>
+            Registrarse con Google
+            </button>
+            
+            <div class="auth-divider"><span>O usa tu correo</span></div>
+            
+            <form id="register-form">
+                <div id="register-step-1">
+                    <div class="input-group">
+                        <label for="reg-name">Nombre de Usuario</label>
+                        <input type="text" id="reg-name" required placeholder="Juan Pérez">
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-email">Correo Electrónico</label>
+                        <input type="email" id="reg-email" required placeholder="correo@ejemplo.com">
+                    </div>
+                    <button type="button" id="btn-register-next" class="auth-submit-btn">
+                        Siguiente <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div id="register-step-2" style="display: none;">
+                    <div class="input-group password-group">
+                        <label for="reg-pass">Contraseña</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="reg-pass" required placeholder="Mínimo 8 caracteres">
+                            <button type="button" class="toggle-password" data-target="reg-pass" aria-label="Mostrar contraseña">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-group password-group">
+                        <label for="reg-pass-confirm">Confirmar Contraseña</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="reg-pass-confirm" required placeholder="Repite tu contraseña">
+                            <button type="button" class="toggle-password" data-target="reg-pass-confirm" aria-label="Mostrar contraseña">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="password-strength">
+                        <div class="strength-bar">
+                            <div class="strength-fill" id="strength-fill"></div>
+                        </div>
+                        <p class="strength-text" id="strength-text">Ingresa una contraseña</p>
+                        <ul class="strength-requirements">
+                            <li id="req-length"><i class="fas fa-circle"></i> Mínimo 8 caracteres</li>
+                            <li id="req-uppercase"><i class="fas fa-circle"></i> Una letra mayúscula</li>
+                            <li id="req-lowercase"><i class="fas fa-circle"></i> Una letra minúscula</li>
+                            <li id="req-number"><i class="fas fa-circle"></i> Un número</li>
+                            <li id="req-special"><i class="fas fa-circle"></i> Un símbolo especial (#@!$%)</li>
+                        </ul>
+                    </div>
+
+                    <div class="step-actions">
+                        <button type="button" id="btn-register-back" class="auth-secondary-btn">
+                            <i class="fas fa-arrow-left"></i> Atrás
+                        </button>
+                        <button type="submit" class="auth-submit-btn">Registrarse</button>
+                    </div>
+                </div>
+            </form>
+            <p class="auth-switch">¿Ya tienes cuenta? <a href="#" id="switch-to-login">Inicia sesión</a></p>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay"></div>
+    <div class="toast-notification" id="toast-notification"></div>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <span class="tm-icon">JAVIXH</span> <span class="accent-text">AccesoryRD</span>
+            </div>
+            <div class="footer-links">
+                <a href="#">Términos y Condiciones</a>
+                <a href="#">Política de Privacidad</a>
+                <a href="#">Contacto</a>
+            </div>
+            <div class="footer-social">
+                <a href="https://www.instagram.com/javichtechaccesory_21/?hl=am-et" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://wa.me/18295592331" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>JavixhServiTexh ©. Powered by Javich 2026</p>
+        </div>
+    </footer>
+
+    <script src="ui-helpers.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
