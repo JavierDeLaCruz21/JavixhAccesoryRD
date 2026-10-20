@@ -10,13 +10,27 @@ let timerInterval = null;
 // ==========================================
 // 1. PROTECCIÓN
 // ==========================================
-function checkAccess() {
-    const user = JSON.parse(sessionStorage.getItem(userStorageKey) || localStorage.getItem(userStorageKey));
-    if (!user) {
+async function checkAccess() {
+    const localUser = JSON.parse(sessionStorage.getItem(userStorageKey) || localStorage.getItem(userStorageKey) || 'null');
+    if (!localUser) {
         window.location.href = 'index.html';
         return null;
     }
-    return user;
+    try {
+        const res = await fetch('api/cliente/session.php', { credentials: 'include' });
+        if (!res.ok) throw new Error('Sesión no autorizada');
+        const data = await res.json();
+        if (!data.success || !data.user) {
+            throw new Error('Sesión inválida');
+        }
+        sessionStorage.setItem(userStorageKey, JSON.stringify(data.user));
+        return data.user;
+    } catch (e) {
+        sessionStorage.removeItem(userStorageKey);
+        localStorage.removeItem(userStorageKey);
+        window.location.href = 'index.html';
+        return null;
+    }
 }
 
 // ==========================================
@@ -414,8 +428,8 @@ function initCerrarDetalle() {
 // ==========================================
 // 10. INICIALIZACIÓN
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const user = checkAccess();
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = await checkAccess();
     if (!user) return;
 
     initTheme();

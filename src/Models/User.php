@@ -65,10 +65,28 @@ class User {
             throw new Exception('La columna google_id no existe en la tabla usuarios');
         }
 
+        // 1. Buscar si ya tiene google_id vinculado
         $user = $this->findByGoogleId($googleId);
         if ($user) return (int)$user['id'];
 
+        // 2. Si ya existe un usuario con ese email, vincular su google_id
+        $existingByEmail = $this->findByEmail($email);
         $hasAvatar = $this->columnExists('avatar');
+
+        if ($existingByEmail) {
+            $updateSql = "UPDATE usuarios SET google_id = :google_id";
+            $params = ['google_id' => $googleId, 'id' => $existingByEmail['id']];
+            if ($hasAvatar && !empty($avatar)) {
+                $updateSql .= ", avatar = :avatar";
+                $params['avatar'] = $avatar;
+            }
+            $updateSql .= " WHERE id = :id";
+            $stmt = $this->db->prepare($updateSql);
+            $stmt->execute($params);
+            return (int)$existingByEmail['id'];
+        }
+
+        // 3. Si no existe, crear nuevo registro
         if ($hasAvatar) {
             $stmt = $this->db->prepare("INSERT INTO usuarios (google_id, nombre, email, avatar, rol) VALUES (:google_id, :nombre, :email, :avatar, 'cliente')");
             $stmt->execute([

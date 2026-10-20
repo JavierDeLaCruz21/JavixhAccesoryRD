@@ -48,9 +48,39 @@ try {
             exit;
         }
 
+        $stmtPrev = $db->prepare("SELECT estado FROM pedidos WHERE id = :id");
+        $stmtPrev->execute(['id' => $id]);
+        $prevOrder = $stmtPrev->fetch();
+
+        if (!$prevOrder) {
+            echo json_encode(['success' => false, 'message' => 'Pedido no encontrado']);
+            exit;
+        }
+
+        $db->beginTransaction();
+
+        // Si se cancela el pedido y no estaba cancelado antes, devolver el stock a productos
+        if ($estado === 'cancelado' && $prevOrder['estado'] !== 'cancelado') {
+            $stmtItems = $db->prepare("SELECT producto_id, cantidad FROM pedido_detalle WHERE pedido_id = :id");
+            $stmtItems->execute(['id' => $id]);
+            $items = $stmtItems->fetchAll();
+
+            $stmtRestock = $db->prepare("UPDATE productos SET stock = stock + :cant WHERE id = :pid");
+            foreach ($items as $item) {
+                if (!empty($item['producto_id']) && (int)$item['cantidad'] > 0) {
+                    $stmtRestock->execute([
+                        'cant' => (int)$item['cantidad'],
+                        'pid'  => (int)$item['producto_id']
+                    ]);
+                }
+            }
+        }
+
         $stmt = $db->prepare("UPDATE pedidos SET estado = :estado WHERE id = :id");
         $stmt->execute(['estado' => $estado, 'id' => $id]);
-        echo json_encode(['success' => true, 'message' => 'Estado actualizado']);
+        $db->commit();
+
+        echo json_encode(['success' => true, 'message' => 'Estado actualizado y stock sincronizado']);
         exit;
     }
 

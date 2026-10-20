@@ -59,6 +59,9 @@
                     <a href="#" class="nav-item" data-section="users">
                         <i class="fas fa-users"></i><span>Usuarios</span>
                     </a>
+                    <a href="#" class="nav-item" data-section="bancos">
+                        <i class="fas fa-university"></i><span>Cuentas Bancarias</span>
+                    </a>
                     <a href="#" class="nav-item" data-section="settings">
                         <i class="fas fa-cog"></i><span>Configuración</span>
                     </a>
@@ -275,6 +278,35 @@
                     </div>
                 </form>
             </section>
+
+            <!-- SECCIÓN BANCOS -->
+            <section class="admin-section" id="section-bancos">
+                <div class="section-header">
+                    <h2>Cuentas Bancarias para Transferencias</h2>
+                    <button class="btn-primary" id="btn-new-banco">
+                        <i class="fas fa-plus"></i> Nueva Cuenta
+                    </button>
+                </div>
+                <div class="products-table-container">
+                    <table class="admin-table" role="table" aria-label="Lista de cuentas bancarias">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Banco</th>
+                                <th>Tipo de Cuenta</th>
+                                <th>Número de Cuenta</th>
+                                <th>Titular</th>
+                                <th>Orden</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bancos-table-body">
+                            <tr><td colspan="8" class="loading-cell">Cargando cuentas bancarias...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -387,6 +419,53 @@
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="user-cancel">Cancelar</button>
                     <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE BANCO -->
+    <div class="modal-overlay" id="banco-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="banco-modal-title">Nueva Cuenta Bancaria</h2>
+                <button class="modal-close" id="banco-modal-close">&times;</button>
+            </div>
+            <form id="banco-form" class="modal-form">
+                <input type="hidden" id="banco-id" value="">
+                <div class="form-group">
+                    <label>Nombre del Banco *</label>
+                    <input type="text" id="b-nombre" placeholder="Ej: Banreservas, Banco Popular" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Cuenta *</label>
+                        <select id="b-tipo" required>
+                            <option value="Ahorros">Ahorros</option>
+                            <option value="Corriente">Corriente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Orden de aparición</label>
+                        <input type="number" id="b-orden" value="1" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Número de Cuenta *</label>
+                    <input type="text" id="b-numero" placeholder="Ej: 960-123456-7" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Titular *</label>
+                    <input type="text" id="b-titular" placeholder="Ej: Javier De La Cruz" required>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="b-activo" checked> Cuenta activa (visible para clientes en checkout)
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="banco-cancel">Cancelar</button>
+                    <button type="submit" class="btn-primary" id="banco-save"><i class="fas fa-save"></i> Guardar</button>
                 </div>
             </form>
         </div>

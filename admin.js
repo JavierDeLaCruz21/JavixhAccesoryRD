@@ -20,13 +20,28 @@ const escapeHtml = (str) => String(str ?? '')
 // ==========================================
 // 1. PROTECCIÓN DE RUTA
 // ==========================================
-function checkAdminAccess() {
-    const user = JSON.parse(sessionStorage.getItem(userStorageKey) || localStorage.getItem(userStorageKey));
-    if (!user || user.role !== 'admin') {
+async function checkAdminAccess() {
+    const localUser = JSON.parse(sessionStorage.getItem(userStorageKey) || localStorage.getItem(userStorageKey) || 'null');
+    if (!localUser || localUser.role !== 'admin') {
         window.location.href = 'index.html';
         return null;
     }
-    return user;
+    try {
+        const res = await fetch('api/cliente/session.php', { credentials: 'include' });
+        if (!res.ok) throw new Error('Sesión no autorizada en servidor');
+        const data = await res.json();
+        if (!data.success || !data.user || data.user.role !== 'admin') {
+            throw new Error('Rol no es admin');
+        }
+        sessionStorage.setItem(userStorageKey, JSON.stringify(data.user));
+        return data.user;
+    } catch (e) {
+        console.warn('Verificación de sesión admin falló:', e);
+        sessionStorage.removeItem(userStorageKey);
+        localStorage.removeItem(userStorageKey);
+        window.location.href = 'index.html';
+        return null;
+    }
 }
 
 // ==========================================
@@ -137,6 +152,7 @@ function initNavigation() {
             if (section === 'products') loadProducts();
             if (section === 'orders') loadOrders();
             if (section === 'users') loadUsers();
+            if (section === 'bancos') loadBancos();
             if (section === 'settings') loadSettings();
 
             if (window.innerWidth <= 768) {
@@ -770,6 +786,194 @@ function initSettingsForm() {
 }
 
 // ==========================================
+// 11.5 GESTIÓN DE BANCOS
+// ==========================================
+let allBancos = [];
+
+async function loadBancos() {
+    const tbody = document.getElementById('bancos-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">Cargando cuentas bancarias...</td></tr>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/bancos.php`, { credentials: 'include' });
+        const data = await response.json();
+
+        if (data.success) {
+            allBancos = data.data || [];
+            renderBancosTable(allBancos);
+        } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">Error: ${escapeHtml(data.message || 'No se pudieron cargar los bancos')}</td></tr>`;
+        }
+    } catch (error) {
+        console.error('Error cargando bancos:', error);
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">Error de conexión al cargar cuentas bancarias</td></tr>';
+    }
+}
+
+function renderBancosTable(bancos) {
+    const tbody = document.getElementById('bancos-table-body');
+    if (!tbody) return;
+
+    if (!bancos || bancos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No hay cuentas bancarias registradas. Crea una con el botón "+ Nueva Cuenta".</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = bancos.map(b => {
+        const activo = parseInt(b.activo) === 1;
+        return `
+            <tr>
+                <td>#${b.id}</td>
+                <td><strong>${escapeHtml(b.nombre)}</strong></td>
+                <td>${escapeHtml(b.tipo_cuenta || 'Ahorros')}</td>
+                <td><code>${escapeHtml(b.numero_cuenta)}</code></td>
+                <td>${escapeHtml(b.titular)}</td>
+                <td>${b.orden || 0}</td>
+                <td>
+                    <span class="badge ${activo ? 'badge-active' : 'badge-inactive'}">
+                        ${activo ? 'Activa' : 'Inactiva'}
+                    </span>
+                </td>
+                <td class="table-actions">
+                    <button class="btn-icon btn-edit-banco" data-id="${b.id}" title="Editar cuenta">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon btn-delete btn-delete-banco" data-id="${b.id}" title="Eliminar cuenta">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-edit-banco').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.id);
+            const b = allBancos.find(item => item.id == id);
+            if (b) openBancoModal(b);
+        });
+    });
+
+    tbody.querySelectorAll('.btn-delete-banco').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = parseInt(btn.dataset.id);
+            if (confirm('¿Seguro que deseas eliminar esta cuenta bancaria?')) {
+                await deleteBanco(id);
+            }
+        });
+    });
+}
+
+function openBancoModal(banco = null) {
+    const modal = document.getElementById('banco-modal');
+    const title = document.getElementById('banco-modal-title');
+    if (!modal) return;
+
+    if (banco) {
+        title.textContent = 'Editar Cuenta Bancaria';
+        document.getElementById('banco-id').value = banco.id;
+        document.getElementById('b-nombre').value = banco.nombre || '';
+        document.getElementById('b-tipo').value = banco.tipo_cuenta || 'Ahorros';
+        document.getElementById('b-orden').value = banco.orden || 1;
+        document.getElementById('b-numero').value = banco.numero_cuenta || '';
+        document.getElementById('b-titular').value = banco.titular || '';
+        document.getElementById('b-activo').checked = parseInt(banco.activo) === 1;
+    } else {
+        title.textContent = 'Nueva Cuenta Bancaria';
+        document.getElementById('banco-form').reset();
+        document.getElementById('banco-id').value = '';
+        document.getElementById('b-activo').checked = true;
+        document.getElementById('b-orden').value = allBancos.length + 1;
+    }
+
+    modal.classList.add('active');
+}
+
+function closeBancoModal() {
+    const modal = document.getElementById('banco-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function initBancoForm() {
+    const form = document.getElementById('banco-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('banco-id').value;
+        const payload = {
+            id: id ? parseInt(id) : 0,
+            nombre: document.getElementById('b-nombre').value.trim(),
+            tipo_cuenta: document.getElementById('b-tipo').value,
+            orden: parseInt(document.getElementById('b-orden').value) || 0,
+            numero_cuenta: document.getElementById('b-numero').value.trim(),
+            titular: document.getElementById('b-titular').value.trim(),
+            activo: document.getElementById('b-activo').checked ? 1 : 0
+        };
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.UI && UI.setButtonLoading) UI.setButtonLoading(submitBtn, true);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/bancos.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('✅ ' + data.message);
+                closeBancoModal();
+                loadBancos();
+            } else {
+                showToast('❌ ' + (data.message || 'Error al guardar banco'));
+            }
+        } catch (err) {
+            console.error('Error guardando banco:', err);
+            showToast('⚠️ Error de conexión');
+        } finally {
+            if (window.UI && UI.setButtonLoading) UI.setButtonLoading(submitBtn, false);
+        }
+    });
+
+    const btnNew = document.getElementById('btn-new-banco');
+    if (btnNew) btnNew.addEventListener('click', () => openBancoModal());
+
+    const btnClose = document.getElementById('banco-modal-close');
+    const btnCancel = document.getElementById('banco-cancel');
+    if (btnClose) btnClose.addEventListener('click', closeBancoModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeBancoModal);
+
+    const modal = document.getElementById('banco-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeBancoModal(); });
+    }
+}
+
+async function deleteBanco(id) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/bancos.php`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ Banco eliminado');
+            loadBancos();
+        } else {
+            showToast('❌ ' + (data.message || 'Error al eliminar'));
+        }
+    } catch (err) {
+        showToast('⚠️ Error de conexión');
+    }
+}
+
+// ==========================================
 // 12. LOGOUT Y UI
 // ==========================================
 function initLogout() {
@@ -810,7 +1014,7 @@ function updateAdminSidebarInfo(user) {
 // 13. INICIALIZACIÓN
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const user = checkAdminAccess();
+    const user = await checkAdminAccess();
     if (!user) return;
 
     updateAdminSidebarInfo(user);
@@ -821,6 +1025,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initProductForm();
     initProductSearchAndFilter();
     initUserForm();
+    initBancoForm();
     initSettingsForm();
     initLogout();
     await fetchSettings();

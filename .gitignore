@@ -27,8 +27,11 @@ uploads/
 /vendor/
 /node_modules/
 
-# Temporales
+# Temporales y Comprimidos
 *.tmp
 *.bak
+*.zip
+*.rar
+*.7z
 debug.php
 diag.php

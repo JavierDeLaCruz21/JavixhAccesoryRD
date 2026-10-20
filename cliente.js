@@ -5,10 +5,28 @@ const API_BASE_URL = 'api/cliente';
 const userStorageKey = 'user';
 const cartStorageKey = 'cart';
 
-function checkClienteAccess() {
-    const user = JSON.parse(sessionStorage.getItem(userStorageKey) || localStorage.getItem(userStorageKey));
-    if (!user) { window.location.href = 'index.html'; return null; }
-    return user;
+async function checkClienteAccess() {
+    const localUser = JSON.parse(sessionStorage.getItem(userStorageKey) || localStorage.getItem(userStorageKey) || 'null');
+    if (!localUser) {
+        window.location.href = 'index.html';
+        return null;
+    }
+    try {
+        const res = await fetch('api/cliente/session.php', { credentials: 'include' });
+        if (!res.ok) throw new Error('Sesión no autorizada');
+        const data = await res.json();
+        if (!data.success || !data.user) {
+            throw new Error('Sesión inválida');
+        }
+        sessionStorage.setItem(userStorageKey, JSON.stringify(data.user));
+        return data.user;
+    } catch (e) {
+        console.warn('Verificación de sesión cliente falló:', e);
+        sessionStorage.removeItem(userStorageKey);
+        localStorage.removeItem(userStorageKey);
+        window.location.href = 'index.html';
+        return null;
+    }
 }
 
 function showToast(message, duration = 3000) {
@@ -534,8 +552,8 @@ async function downloadInvoice(pedidoId) {
 // ==========================================
 // INICIALIZACIÓN
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const user = checkClienteAccess();
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = await checkClienteAccess();
     if (!user) return;
     
     updateUserSidebarInfo(user);

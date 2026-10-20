@@ -175,7 +175,34 @@ function renderUserProfileUI() {
     }
 }
 
-function logoutCurrentUser() {
+async function syncSessionWithServer() {
+    try {
+        const res = await fetch('api/cliente/session.php', { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.user) {
+                sessionStorage.setItem(userStorageKey, JSON.stringify(data.user));
+                localStorage.setItem(userStorageKey, JSON.stringify(data.user));
+                renderUserProfileUI();
+                return data.user;
+            }
+        }
+    } catch (e) {
+        console.warn('Error verificando sesión con el servidor:', e);
+    }
+    // Si el servidor no valida la sesión, limpiar almacenamiento
+    sessionStorage.removeItem(userStorageKey);
+    localStorage.removeItem(userStorageKey);
+    renderUserProfileUI();
+    return null;
+}
+
+async function logoutCurrentUser() {
+    try {
+        await fetch('api/auth/logout.php', { method: 'POST', credentials: 'include' });
+    } catch (error) {
+        console.warn('No se pudo contactar api/auth/logout.php:', error);
+    }
     try {
         sessionStorage.removeItem(userStorageKey);
         localStorage.removeItem(userStorageKey);
@@ -187,67 +214,61 @@ function logoutCurrentUser() {
         if (drawer && drawer.classList.contains('active')) toggleCart(false);
         updateUI();
         renderUserProfileUI();
-        showToast('Sesión cerrada', 2500);
+        showToast('Sesión cerrada correctamente', 2500);
         const navActions = document.getElementById('nav-actions');
         const navOverlay = document.querySelector('.nav-overlay');
         if (navActions) navActions.classList.remove('active');
         if (navOverlay) navOverlay.classList.remove('active');
     } catch (error) {
-        console.warn('No se pudo cerrar la sesión:', error);
+        console.warn('Error en logout:', error);
         showToast('No se pudo cerrar sesión', 2500);
     }
 }
 
-function checkUrlForGoogleLogin() {
+async function checkUrlForGoogleLogin() {
     const urlParams = new URLSearchParams(window.location.search);
-    const loginSuccess = urlParams.get('login');
-    const userName = urlParams.get('name');
-    const userEmail = urlParams.get('email');
-    const userRole = urlParams.get('role');
+    const loginParam = urlParams.get('login');
+    const errorParam = urlParams.get('error');
 
-    if (loginSuccess === 'success' && userName) {
-        const user = {
-            name: decodeURIComponent(userName),
-            email: userEmail ? decodeURIComponent(userEmail) : '',
-            role: userRole ? decodeURIComponent(userRole).trim().toLowerCase() : 'cliente'
-        };
-        sessionStorage.setItem(userStorageKey, JSON.stringify(user));
-        localStorage.setItem(userStorageKey, JSON.stringify(user));
-        sessionStorage.setItem('just_logged_in', 'true');
+    if (errorParam) {
         window.history.replaceState({}, document.title, window.location.pathname);
+        if (errorParam === 'google_not_configured') {
+            showToast('⚠️ Google Login no está configurado en el servidor.', 3500);
+        } else {
+            showToast('❌ Error de autenticación con Google.', 3500);
+        }
+        return;
+    }
+
+    if (loginParam === 'success') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Validar sesión REAL en el backend
+        const user = await syncSessionWithServer();
+        if (!user) {
+            showToast('❌ No se pudo validar la sesión con el servidor.', 3000);
+            return;
+        }
 
         const fromCheckout = sessionStorage.getItem(checkoutRedirectKey);
         if (fromCheckout === 'true') {
-        sessionStorage.removeItem(checkoutRedirectKey);
-        showToast('✅ Bienvenido ' + user.name + '. Redirigiendo a tu cuenta...', 2000);
-        // Ocultar loading cuando los productos estén cargados (o tras 8s máx)
-        // Nota: loadProducts() se llama más arriba; aquí esperamos a que termine.
-        // Como es async, usamos el helper que ya soporta promises.
-        if (window.UI && window.UI.hideLoadingWhenReady) {
-        window.UI.hideLoadingWhenReady([
-            // Esperamos al fetch de productos (ya está en vuelo)
-            fetch('api/public/products.php').catch(() => {})
-        ]);
-    } else 
-        
-        {
-        // Fallback si ui-helpers.js no cargó
-        setTimeout(() => {
-            const ls = document.getElementById('loading-screen');
-            if (ls) { ls.classList.add('hidden'); setTimeout(() => ls.remove(), 500); }
-        }, 1500);
-    }
-}
+            sessionStorage.removeItem(checkoutRedirectKey);
+            showToast('✅ Bienvenido ' + user.name + '. Redirigiendo a tu cuenta...', 2000);
+            if (window.UI && window.UI.hideLoadingWhenReady) {
+                window.UI.hideLoadingWhenReady([fetch('api/public/products.php').catch(() => {})]);
+            }
+        }
 
         if (user.role === 'admin') {
             showToast('✅ Bienvenido Admin, ' + user.name, 2000);
-            setTimeout(() => { window.location.href = 'admin.html'; }, 300);
+            setTimeout(() => { window.location.href = 'admin.html'; }, 500);
             return;
         }
 
         showToast('✅ Bienvenido, ' + user.name + '. Redirigiendo a tu cuenta...', 2000);
-        setTimeout(() => { window.location.href = 'cliente.html'; }, 1500);
-        return;
+        setTimeout(() => { window.location.href = 'cliente.html'; }, 1200);
+    } else {
+        // En arranque normal, sincronizar sesión silenciosamente
+        syncSessionWithServer();
     }
 }
 
@@ -282,20 +303,45 @@ function showToast(message, duration = 2500) {
 function addToCart(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
+
+    const availableStock = parseInt(product.stock, 10) || 0;
+    if (availableStock <= 0) {
+        showToast('⚠️ Este producto está agotado temporalmente');
+        return;
+    }
+
     const existing = cart.find(item => item.id === id);
-    if (existing) existing.quantity++;
-    else cart.push({ ...product, quantity: 1 });
+    if (existing) {
+        if (existing.quantity >= availableStock) {
+            showToast(`⚠️ Solo quedan ${availableStock} unidades disponibles de este producto`);
+            return;
+        }
+        existing.quantity++;
+    } else {
+        cart.push({ ...product, quantity: 1 });
+    }
     saveCart();
     updateUI();
-    showToast(`${product.name} añadido al carrito`);
+    showToast(`✅ ${product.name} añadido al carrito`);
 }
 
 function updateQuantity(id, delta) {
     const index = cart.findIndex(item => item.id === id);
     if (index === -1) return;
-    const newQty = cart[index].quantity + delta;
-    if (newQty <= 0) cart.splice(index, 1);
-    else cart[index].quantity = newQty;
+
+    const item = cart[index];
+    const product = products.find(p => p.id === id);
+    const availableStock = product ? (parseInt(product.stock, 10) || 999) : 999;
+
+    const newQty = item.quantity + delta;
+    if (newQty <= 0) {
+        cart.splice(index, 1);
+    } else if (newQty > availableStock) {
+        showToast(`⚠️ Solo hay ${availableStock} unidades disponibles en stock`);
+        return;
+    } else {
+        item.quantity = newQty;
+    }
     saveCart();
     updateUI();
 }
@@ -363,16 +409,39 @@ if (filtered.length === 0) {
 
     const cards = pageItems.map(product => {
         const badge = getProductBadge(product);
-        const description = product.description ? `${product.description.slice(0, 60)}${product.description.length > 60 ? '...' : ''}` : 'Producto destacado para tus dispositivos.';
+        const description = product.description ? `${product.description.slice(0, 75)}${product.description.length > 75 ? '...' : ''}` : 'Accesorio de alta calidad para tus dispositivos.';
         const imageSrc = product.image || './img/android-chrome-192x192.png';
-        return `<article class="product-card">
+        const stock = parseInt(product.stock, 10) || 0;
+        const umbral = parseInt(storeSettings.umbral_stock, 10) || 5;
+        const isAgotado = stock <= 0;
+        const isLowStock = !isAgotado && stock <= umbral;
+
+        let stockBadge = '';
+        if (isAgotado) {
+            stockBadge = `<span class="stock-badge stock-out"><i class="fas fa-times-circle"></i> Agotado</span>`;
+        } else if (isLowStock) {
+            stockBadge = `<span class="stock-badge stock-low"><i class="fas fa-bolt"></i> ¡Solo ${stock} disponibles!</span>`;
+        } else {
+            stockBadge = `<span class="stock-badge stock-ok"><i class="fas fa-check-circle"></i> En stock (${stock})</span>`;
+        }
+
+        return `<article class="product-card ${isAgotado ? 'card-agotado' : ''}">
             ${badge ? `<span class="product-badge">${escapeHtml(badge)}</span>` : ''}
-            <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(product.name)}" loading="lazy" class="product-img">
-            <span class="product-category">${escapeHtml(product.category)}</span>
-            <h3>${escapeHtml(product.name)}</h3>
-            <p class="product-desc">${escapeHtml(description)}</p>
-            <span class="price">$${parseFloat(product.price).toFixed(2)}</span>
-            <button class="add-btn" data-id="${parseInt(product.id, 10)}">Agregar al carrito</button>
+            <div class="product-img-wrapper">
+                <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(product.name)}" loading="lazy" class="product-img">
+            </div>
+            <div class="product-info">
+                <span class="product-category">${escapeHtml(product.category)}</span>
+                <h3 title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</h3>
+                <p class="product-desc">${escapeHtml(description)}</p>
+            </div>
+            <div class="product-actions">
+                ${stockBadge}
+                <span class="price">RD$ ${parseFloat(product.price).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <button class="add-btn ${isAgotado ? 'btn-disabled' : ''}" data-id="${parseInt(product.id, 10)}" ${isAgotado ? 'disabled' : ''}>
+                    ${isAgotado ? '<i class="fas fa-ban"></i> Agotado' : '<i class="fas fa-cart-plus"></i> Agregar al carrito'}
+                </button>
+            </div>
         </article>`;
     }).join('');
 
@@ -703,9 +772,12 @@ function initHamburger() {
     const navActions = document.getElementById('nav-actions');
     if (!hamburger || !navActions) return;
 
-    const overlay = document.createElement('div');
-    overlay.className = 'nav-overlay';
-    document.body.appendChild(overlay);
+    let overlay = document.querySelector('.nav-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'nav-overlay';
+        document.body.appendChild(overlay);
+    }
 
     function closeMenu() {
         navActions.classList.remove('active');
@@ -1194,15 +1266,10 @@ if (btnNext) {
     }
 
     function handleGoogleAuth() {
-        const CLIENT_ID = '696503618118-hfgthtjhim67fu3p9r7qosobiiechi1g.apps.googleusercontent.com';
-        const REDIRECT_URI = 'http://localhost/javich-shop/api/auth/callback.php';
-        const scope = 'email profile openid';
-        const responseType = 'code';
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=${responseType}&scope=${encodeURIComponent(scope)}&prompt=select_account`;
         showToast('Redirigiendo a Google...', 2000);
         setTimeout(() => {
-            window.location.href = authUrl;
-        }, 800);
+            window.location.href = 'api/auth/google-login.php';
+        }, 400);
     }
 
     const googleBtns = document.querySelectorAll('.google-auth-btn');

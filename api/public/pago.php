@@ -80,9 +80,23 @@ try {
         }
 
         if (strtotime($pedido['fecha_expiracion']) < time()) {
-            $stmt = $db->prepare("UPDATE pedidos SET estado_pago = 'expirado' WHERE id = :id");
+            $db->beginTransaction();
+            $stmtItems = $db->prepare("SELECT producto_id, cantidad FROM pedido_detalle WHERE pedido_id = :id");
+            $stmtItems->execute(['id' => $pedido_id]);
+            $items = $stmtItems->fetchAll();
+
+            $stmtRestock = $db->prepare("UPDATE productos SET stock = stock + :cant WHERE id = :pid");
+            foreach ($items as $item) {
+                if (!empty($item['producto_id']) && (int)$item['cantidad'] > 0) {
+                    $stmtRestock->execute(['cant' => (int)$item['cantidad'], 'pid' => (int)$item['producto_id']]);
+                }
+            }
+
+            $stmt = $db->prepare("UPDATE pedidos SET estado_pago = 'expirado', estado = 'cancelado' WHERE id = :id");
             $stmt->execute(['id' => $pedido_id]);
-            echo json_encode(['success' => false, 'message' => 'El pedido ha expirado']);
+            $db->commit();
+
+            echo json_encode(['success' => false, 'message' => 'El pedido ha expirado y fue cancelado. Por favor realiza una nueva compra.']);
             exit;
         }
 

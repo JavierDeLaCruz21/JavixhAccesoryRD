@@ -715,6 +715,62 @@ body.dark-mode .status-cancelled { background: #7f1d1d; color: #fca5a5; }
 .action-btn.delete { color: var(--danger); }
 .action-btn.delete:hover { background: rgba(239, 68, 68, 0.1); }
 
+/* Badges & Botones de acciones para tablas dinámicas (Bancos, etc.) */
+.badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-block;
+    text-align: center;
+}
+
+.badge-active { background: #d1fae5; color: #059669; }
+.badge-inactive { background: #fee2e2; color: #dc2626; }
+body.dark-mode .badge-active { background: #064e3b; color: #6ee7b7; }
+body.dark-mode .badge-inactive { background: #7f1d1d; color: #fca5a5; }
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: rgba(37, 99, 235, 0.1);
+    transform: scale(1.1);
+}
+
+.btn-icon.btn-delete {
+    color: var(--danger);
+}
+
+.btn-icon.btn-delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.empty-cell {
+    text-align: center !important;
+    padding: 2.5rem 1rem !important;
+    color: var(--text-light);
+    font-style: italic;
+}
+
 /* ==========================================
    MODALES
    ========================================== */

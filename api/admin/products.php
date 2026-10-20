@@ -80,21 +80,35 @@ try {
             }
         }
 
-        // Manejar imagen subida
+        // Manejar imagen subida con verificación estricta de MIME
         $imagenPath = null;
         if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = __DIR__ . '/../../img/productos/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-            $ext = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
-            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
-                echo json_encode(['success' => false, 'message' => 'Formato de imagen no permitido']);
-                exit;
-            }
+            if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+
             if ($_FILES['imagen']['size'] > 5 * 1024 * 1024) {
-                echo json_encode(['success' => false, 'message' => 'La imagen supera 5MB']);
+                echo json_encode(['success' => false, 'message' => 'La imagen supera los 5MB permitidos']);
                 exit;
             }
-            $fileName = 'prod_' . time() . '_' . uniqid() . '.' . $ext;
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $_FILES['imagen']['tmp_name']);
+            finfo_close($finfo);
+
+            $mimeMap = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/webp' => 'webp',
+                'image/gif'  => 'gif'
+            ];
+
+            if (!isset($mimeMap[$mimeType])) {
+                echo json_encode(['success' => false, 'message' => 'Formato de imagen no permitido. Solo JPG, PNG, WebP o GIF']);
+                exit;
+            }
+
+            $ext = $mimeMap[$mimeType];
+            $fileName = 'prod_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
             if (move_uploaded_file($_FILES['imagen']['tmp_name'], $uploadDir . $fileName)) {
                 $imagenPath = 'img/productos/' . $fileName;
             }

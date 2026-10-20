@@ -503,12 +503,33 @@ body.dark-mode .timer-card {
 }
 
 /* ========================================== */
-/* RESPONSIVE */
+/* RESPONSIVE & MOBILE-FIRST HARDENING */
 /* ========================================== */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 @media (max-width: 768px) {
-    .pago-header { padding: 1rem; }
+    .pago-header { padding: 0.8rem 1rem; }
     .pago-main { padding: 0 1rem; margin: 1rem auto; }
-    .pago-grid { grid-template-columns: 1fr; }
+    .pago-grid { grid-template-columns: 1fr; gap: 1rem; }
+    .timer-card { padding: 1rem; gap: 1rem; }
     .timer-value { font-size: 1.4rem; }
     .brand-text { display: none; }
+}
+
+@media (max-width: 480px) {
+    .pago-header { padding: 0.75rem 0.85rem; }
+    .pago-main { padding: 0 0.75rem; margin: 0.75rem auto; }
+    .timer-card { flex-direction: column; text-align: center; gap: 0.5rem; }
+    .timer-value { font-size: 1.3rem; }
+    .pago-card { padding: 1.25rem 1rem; }
+    .banco-card { padding: 0.75rem; }
+    .banco-card-img { width: 44px; height: 44px; }
+    .banco-card-title { font-size: 1rem; }
+    .cuenta-row { flex-wrap: wrap; gap: 0.5rem; }
+    .cuenta-row span { word-break: break-all; }
+    .btn-copiar { width: 100%; height: 42px; border-radius: 8px; margin-top: 0.25rem; }
+    .btn-whatsapp { width: 100%; padding: 0.9rem 1rem; font-size: 0.95rem; }
 }
